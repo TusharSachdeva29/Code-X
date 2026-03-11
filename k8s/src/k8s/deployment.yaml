@@ -1,0 +1,51 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: user-{{USERNAME}}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: user-{{USERNAME}}
+  template:
+    metadata:
+      labels:
+        app: user-{{USERNAME}}
+    spec:
+      volumes:
+        - name: user-code
+          emptyDir: {}
+
+      initContainers:
+        - name: init-azure-fetch
+          image: mcr.microsoft.com/azure-cli
+          command: ["sh", "-c"]
+          args:
+            - |
+              set -ex
+              echo "🔥 Starting Azure Blob sync..."
+              mkdir -p /data
+              az storage blob download-batch \
+                --destination /data \
+                --source "{{AZURE_CONTAINER_NAME}}" \
+                --pattern "{{BLOB_PATH}}/*" \
+                --connection-string "$AZURE_STORAGE_CONNECTION_STRING" \
+                || echo "⚠️ No files to copy from Azure Blob Storage"
+              echo "✅ Azure Blob copy done"
+          env:
+            - name: AZURE_STORAGE_CONNECTION_STRING
+              value: "{{AZURE_STORAGE_CONNECTION_STRING}}"
+            - name: USERNAME
+              value: "{{USERNAME}}"
+          volumeMounts:
+            - name: user-code
+              mountPath: /data
+
+      containers:
+        - name: user-container
+          image: vardaan02/docker-backend-per-user:v2
+          ports:
+            - containerPort: 3000
+          volumeMounts:
+            - name: user-code
+              mountPath: /code
