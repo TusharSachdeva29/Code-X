@@ -29,7 +29,27 @@ export function useSocket(dockerBackendUrl?: string | null) {
     
     console.log("Connecting Docker socket to:", url);
     
-    const s = io(url, {
+    // Extract the path from the URL for Socket.io
+    // URL like http://20.204.187.189/user/tushar-sachdeva/3000
+    // needs path: /user/tushar-sachdeva/3000/socket.io/
+    let socketPath = "/socket.io/";
+    let baseUrl = url;
+    
+    try {
+      const urlObj = new URL(url);
+      if (urlObj.pathname && urlObj.pathname !== "/") {
+        // Custom path - need to append socket.io to it
+        socketPath = urlObj.pathname.replace(/\/$/, "") + "/socket.io/";
+        baseUrl = urlObj.origin;
+      }
+    } catch (e) {
+      console.error("Failed to parse URL:", e);
+    }
+    
+    console.log("Socket.io base URL:", baseUrl, "path:", socketPath);
+    
+    const s = io(baseUrl, {
+      path: socketPath,
       transports: ["websocket"],
     });
 

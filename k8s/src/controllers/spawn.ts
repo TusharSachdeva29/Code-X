@@ -67,7 +67,10 @@ export const handleSpawn = async (req: Request, res: Response) => {
     });
   } catch (err: any) {
     // If deployment already exists, that's okay
-    if (err.body?.reason === "AlreadyExists") {
+    // The error body could be a string or object depending on the k8s client version
+    const errorBody = typeof err.body === 'string' ? JSON.parse(err.body) : err.body;
+    
+    if (err.code === 409 || errorBody?.reason === "AlreadyExists" || errorBody?.code === 409) {
       console.log(`ℹ️ Deployment ${deploymentName} already exists`);
       res.status(200).json({
         message: "Container already exists",

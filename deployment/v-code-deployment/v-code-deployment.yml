@@ -16,7 +16,7 @@ spec:
     spec:
       containers:
         - name: v-code-container
-          image: madmonk29/v-code:v1
+          image: madmonk29/v-code:v2
           imagePullPolicy: Always
           ports:
             - containerPort: 3001

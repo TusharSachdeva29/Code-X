@@ -18,7 +18,7 @@ spec:
       serviceAccountName: k8s-orchestrator-sa
       containers:
         - name: k8s-orchestrator
-          image: madmonk29/v-code-k8s:v4
+          image: madmonk29/v-code-k8s:v6
           imagePullPolicy: Always
           ports:
             - containerPort: 3002
