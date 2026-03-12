@@ -43,9 +43,16 @@ spec:
 
       containers:
         - name: user-container
-          image: vardaan02/docker-backend-per-user:v2
+          image: madmonk29/docker-backend-per-user:v1
           ports:
             - containerPort: 3000
+          env:
+            - name: PORT
+              value: "3000"
+            - name: ACTUAL_PATH
+              value: "/code"
+            - name: CLIENT_ORIGIN
+              value: "http://20.204.187.189,https://20.204.187.189,http://localhost:5173,http://localhost:5174"
           volumeMounts:
             - name: user-code
               mountPath: /code

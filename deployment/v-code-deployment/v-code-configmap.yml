@@ -7,7 +7,7 @@ data:
   AZURE_STORAGE_CONTAINER_NAME: "codex-bucket"
   AZURE_STORAGE_ACCOUNT_NAME: "tusharblobstore"
   # Updated with your LoadBalancer IP
-  CLIENT_ORIGINS: "http://20.204.187.189,https://20.204.187.189,http://localhost:5173"
+  CLIENT_ORIGINS: "http://20.204.187.189,https://20.204.187.189,http://localhost:5173,http://localhost:5174"
   COPY_DIST: "./../../../../s3-code"
   SMTP_HOST: "smtp.gmail.com"
   SMTP_PORT: "587"

@@ -1,0 +1,43 @@
+# k8s-orchestrator-rbac.yml - RBAC permissions for K8s orchestrator to manage pods/deployments
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: k8s-orchestrator-sa
+  namespace: default
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: k8s-orchestrator-role
+  namespace: default
+rules:
+  # Permissions to manage deployments (for spawning user containers)
+  - apiGroups: ["apps"]
+    resources: ["deployments"]
+    verbs: ["create", "delete", "get", "list", "watch", "update", "patch"]
+  # Permissions to manage pods
+  - apiGroups: [""]
+    resources: ["pods"]
+    verbs: ["create", "delete", "get", "list", "watch"]
+  # Permissions to manage services
+  - apiGroups: [""]
+    resources: ["services"]
+    verbs: ["create", "delete", "get", "list", "watch", "update", "patch"]
+  # Permissions to read configmaps and secrets
+  - apiGroups: [""]
+    resources: ["configmaps", "secrets"]
+    verbs: ["get", "list"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: k8s-orchestrator-rolebinding
+  namespace: default
+subjects:
+  - kind: ServiceAccount
+    name: k8s-orchestrator-sa
+    namespace: default
+roleRef:
+  kind: Role
+  name: k8s-orchestrator-role
+  apiGroup: rbac.authorization.k8s.io

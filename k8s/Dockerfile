@@ -24,6 +24,8 @@ WORKDIR /app
 COPY --from=builder /app/package*.json ./
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/dist ./dist
+# Copy k8s YAML templates (they're not compiled by tsc)
+COPY --from=builder /app/src/k8s ./dist/k8s
 
 # Start the app
 CMD ["node", "dist/index.js"]

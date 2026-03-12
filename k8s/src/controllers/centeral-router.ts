@@ -8,14 +8,16 @@ export const handleProxy = (
 ) => {
   const { username, port } = req.params;
 
-  console.log(username, port);
+  console.log("Proxying request for:", username, "port:", port);
 
   if (!username || !port) {
     res.status(400).json({ error: "Missing username or port" });
     return;
   }
 
-  const target = `http://user-${username}.default.pod.cluster.local:${port}`;
+  // Use the service DNS name (service-name.namespace.svc.cluster.local)
+  const target = `http://user-${username}-svc.default.svc.cluster.local:${port}`;
+  console.log("Proxy target:", target);
 
   const proxy = createProxyMiddleware({
     target,

@@ -8,6 +8,7 @@ import {
 } from "react";
 import type { FileNode, FileTreeContextType } from "@/types/file-structure";
 import { useSocket } from "@/hooks/useSockets";
+import { useContainerSpawn } from "@/hooks/useContainerSpawn";
 
 const FileTreeContext = createContext<FileTreeContextType | undefined>(
   undefined
@@ -35,7 +36,18 @@ export function FileTreeProvider({
   const [expandedNodes, setExpandedNodes] = useState<Set<string>>(new Set());
   const [selectingNode, setSelectingNode] = useState<boolean>(false);
   
-  const { socketS3, socketDocker } = useSocket();
+  // Container spawning for terminal access
+  const { containerUrl, spawn, isSpawning, isSpawned } = useContainerSpawn();
+  
+  // Get username from localStorage and spawn container
+  useEffect(() => {
+    const username = localStorage.getItem("username");
+    if (username) {
+      spawn(username);
+    }
+  }, [spawn]);
+  
+  const { socketS3, socketDocker } = useSocket(containerUrl);
   
   const [code, setCode] = useState("");
   const [language,setLanguage] = useState("javascript");

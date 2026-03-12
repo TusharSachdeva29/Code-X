@@ -16,7 +16,7 @@ spec:
     spec:
       containers:
         - name: backend
-          image: vardaan02/k8s-backend:v3
+          image: madmonk29/k8s-backend:v1
           imagePullPolicy: Always
           ports:
             - containerPort: 3000
