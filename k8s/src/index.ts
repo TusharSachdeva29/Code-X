@@ -49,37 +49,6 @@ wsProxy.on("error", (err, req, res) => {
   console.error("❌ Proxy error:", err.message);
 });
 
-// Proxy middleware for user container HTTP requests
-// Handle requests that nginx stripped /user from (e.g., /tushar-sachdeva/3000/socket.io)
-app.use("/:username/:port", (req, res, next) => {
-  const { username, port } = req.params;
-  
-  // Skip if this is a spawn route
-  if (username === "spawn" || username === "health") {
-    return next();
-  }
-  
-  const target = `http://user-${username}-svc.default.svc.cluster.local:${port}`;
-  
-  // Get the remaining path after /:username/:port
-  const originalUrl = req.originalUrl;
-  const prefixToRemove = `/${username}/${port}`;
-  const newPath = originalUrl.startsWith(prefixToRemove) 
-    ? originalUrl.slice(prefixToRemove.length) || "/"
-    : req.path;
-  
-  console.log(`📡 HTTP proxy: ${originalUrl} -> ${target}${newPath}`);
-  
-  // Use http-proxy directly for HTTP requests
-  req.url = newPath;
-  wsProxy.web(req, res, { target }, (err) => {
-    if (err) {
-      console.error("❌ HTTP proxy error:", err.message);
-      res.status(502).json({ error: "Bad Gateway" });
-    }
-  });
-});
-
 // Handle WebSocket upgrade requests for user containers
 server.on("upgrade", (req, socket, head) => {
   const url = req.url || "";
