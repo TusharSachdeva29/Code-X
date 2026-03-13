@@ -4,6 +4,25 @@ import { useEffect, useRef } from "react";
 import { useAddS3Object, useDeleteS3Object } from "./useS3Object";
 import { saveFile } from "@/api/file-system/save-file";
 
+function normalizeDockerPath(rawPath: string): string {
+  if (!rawPath) return "";
+
+  const normalized = rawPath.replace(/\\/g, "/").trim();
+
+  if (!normalized) return "";
+
+  if (!normalized.startsWith("/")) {
+    return normalized.replace(/^\.\//, "");
+  }
+
+  const rootMatch = normalized.match(/\/(?:s3-code|code)\/(.+)$/);
+  if (rootMatch?.[1]) {
+    return rootMatch[1];
+  }
+
+  return normalized.replace(/^\/+/, "");
+}
+
 export function useTerminal(
   socketS3: Socket | null,
   socketDocker: Socket | null
@@ -61,7 +80,8 @@ export function useTerminal(
       type: "file" | "folder";
       content: string;
     }) => {
-      const finalpath = path.replace(/^.*s3-code\//, "");
+      const finalpath = normalizeDockerPath(path);
+      if (!finalpath) return;
       await addS3Object({ path: finalpath, type, content });
     };
 
@@ -70,7 +90,7 @@ export function useTerminal(
     return () => {
       socketDocker.off("docker:add", addFileFolder);
     };
-  });
+  }, [socketDocker, socketS3, addS3Object]);
 
   // remove file-folder
   useEffect(() => {
@@ -83,7 +103,8 @@ export function useTerminal(
       path: string;
       type: "file" | "folder";
     }) => {
-      const finalpath = path.replace(/^.*s3-code\//, "");
+      const finalpath = normalizeDockerPath(path);
+      if (!finalpath) return;
       await deleteS3Object({ path: finalpath, type });
     };
 
@@ -92,7 +113,7 @@ export function useTerminal(
     return () => {
       socketDocker.off("docker:remove", deleteFileFolder);
     };
-  });
+  }, [socketDocker, socketS3, deleteS3Object]);
 
   useEffect(() => {
   if (!socketDocker || !socketS3) return;
@@ -104,7 +125,8 @@ export function useTerminal(
     path: string;
     content: string;
   }) => {
-    const finalpath = path.replace(/^.*s3-code\//, "");
+    const finalpath = normalizeDockerPath(path);
+    if (!finalpath) return;
     await saveFile({ path: finalpath, content });
   };
 

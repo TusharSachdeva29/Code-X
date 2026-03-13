@@ -4,13 +4,18 @@ import fs from "fs/promises";
 import path from "path";
 import { getFileContent } from "../utils/in-memory-map";
 
+function toRelativePath(rootPath: string, targetPath: string): string {
+  const relativePath = path.relative(rootPath, targetPath).replace(/\\/g, "/");
+  return relativePath;
+}
+
 function shouldIgnore(p: string): boolean {
   return IGNORED_DIRS.some(
     (dir) => p.includes(`/${dir}/`) || p.endsWith(`/${dir}`)
   );
 }
 
-async function emitFolderContents(io: Server, folderPath: string) {
+async function emitFolderContents(io: Server, folderPath: string, watchRootPath: string) {
   if (shouldIgnore(folderPath)) return;
 
   try {
@@ -23,18 +28,24 @@ async function emitFolderContents(io: Server, folderPath: string) {
 
       if (entry.isFile()) {
         const content = await fs.readFile(fullPath, "utf-8");
+        const relativePath = toRelativePath(watchRootPath, fullPath);
+        if (!relativePath || relativePath.startsWith("..")) continue;
+
         io.emit("docker:add", {
-          path: fullPath,
+          path: relativePath,
           type: "file",
           content,
         });
       } else if (entry.isDirectory()) {
+        const relativePath = toRelativePath(watchRootPath, fullPath);
+        if (!relativePath || relativePath.startsWith("..")) continue;
+
         io.emit("docker:add", {
-          path: fullPath,
+          path: relativePath,
           type: "folder",
         });
 
-        await emitFolderContents(io, fullPath);
+        await emitFolderContents(io, fullPath, watchRootPath);
       }
     }
   } catch (err) {
@@ -43,7 +54,9 @@ async function emitFolderContents(io: Server, folderPath: string) {
 }
 
 export function setupFileWatcher(io: Server) {
-  const watcher = chokidar.watch("./../s3-code", {
+  const watchRootPath = path.resolve(process.env.ACTUAL_PATH || "./code");
+
+  const watcher = chokidar.watch(watchRootPath, {
     persistent: true,
     ignoreInitial: false,
     ignored: (path) => shouldIgnore(path),
@@ -54,9 +67,12 @@ export function setupFileWatcher(io: Server) {
       if (shouldIgnore(filePath)) return;
 
       try {
+        const relativePath = toRelativePath(watchRootPath, filePath);
+        if (!relativePath || relativePath.startsWith("..")) return;
+
         const content = await fs.readFile(filePath, "utf-8");
         io.emit("docker:add", {
-          path: filePath,
+          path: relativePath,
           type: "file",
           content,
         });
@@ -67,26 +83,35 @@ export function setupFileWatcher(io: Server) {
     .on("addDir", async (folderPath) => {
       if (shouldIgnore(folderPath)) return;
 
+      const relativePath = toRelativePath(watchRootPath, folderPath);
+      if (!relativePath || relativePath.startsWith("..")) return;
+
       io.emit("docker:add", {
-        path: folderPath,
+        path: relativePath,
         type: "folder",
       });
 
-      await emitFolderContents(io, folderPath);
+      await emitFolderContents(io, folderPath, watchRootPath);
     })
     .on("unlink", (filePath) => {
       if (shouldIgnore(filePath)) return;
 
+      const relativePath = toRelativePath(watchRootPath, filePath);
+      if (!relativePath || relativePath.startsWith("..")) return;
+
       io.emit("docker:remove", {
-        path: filePath,
+        path: relativePath,
         type: "file",
       });
     })
     .on("unlinkDir", (folderPath) => {
       if (shouldIgnore(folderPath)) return;
 
+      const relativePath = toRelativePath(watchRootPath, folderPath);
+      if (!relativePath || relativePath.startsWith("..")) return;
+
       io.emit("docker:remove", {
-        path: folderPath,
+        path: relativePath,
         type: "folder",
       });
     })
@@ -102,8 +127,11 @@ export function setupFileWatcher(io: Server) {
 
       try {
         const content = await fs.readFile(filePath, "utf-8");
+        const relativePath = toRelativePath(watchRootPath, filePath);
+        if (!relativePath || relativePath.startsWith("..")) return;
+
         io.emit("docker:update", {
-          path: filePath,
+          path: relativePath,
           type: "file",
           content:contentFromDisk,
         });

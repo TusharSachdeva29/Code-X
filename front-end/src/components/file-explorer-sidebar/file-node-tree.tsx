@@ -96,9 +96,14 @@ export function FileTreeNode({ node, level }: FileTreeNodeProps) {
     }
     if (node.type === "file") {
       const content = await loadFile({ path: node.path });
-      await syncFile({ path: node.path, content: content });
       setCode(content);
       setLanguage(getLanguageFromPath(node.path));
+
+      try {
+        await syncFile({ path: node.path, content: content });
+      } catch (error) {
+        console.warn("⚠️ Local sync failed, editor still loaded remote file:", error);
+      }
     }
     setSelectedNode(node);
   };
