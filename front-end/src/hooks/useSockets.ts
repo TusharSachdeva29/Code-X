@@ -8,6 +8,9 @@ export function useSocket(dockerBackendUrl?: string | null) {
   useEffect(() => {
     const s = io(import.meta.env.VITE_WEB_SOCKET_URL, {
       transports: ["websocket"],
+      // Keep this socket isolated from other sockets on the same origin.
+      forceNew: true,
+      multiplex: false,
     });
 
     setSocketS3(s);
@@ -19,11 +22,12 @@ export function useSocket(dockerBackendUrl?: string | null) {
   }, [setSocketS3]);
 
   useEffect(() => {
-    // Use provided URL (per-user container) or fallback to env variable
-    const url = dockerBackendUrl || import.meta.env.VITE_DOCKER_BACKEND;
-    
+    // Only connect when per-user container URL is available.
+    // Connecting early to the root URL can create SID/path mismatches.
+    const url = dockerBackendUrl;
+
     if (!url) {
-      console.log("No Docker backend URL available yet");
+      console.log("No per-user Docker backend URL available yet");
       return;
     }
     
@@ -50,7 +54,16 @@ export function useSocket(dockerBackendUrl?: string | null) {
     
     const s = io(baseUrl, {
       path: socketPath,
-      transports: ["websocket"],
+      // Use polling first so the HTTP handshake works through the multi-hop
+      // proxy chain (nginx → k8s-orchestrator → user pod), then upgrade to WS.
+      transports: ["polling", "websocket"],
+      // Prevent sharing a manager with the S3/default socket path.
+      forceNew: true,
+      multiplex: false,
+      reconnection: true,
+      reconnectionAttempts: Infinity,
+      reconnectionDelay: 2000,
+      reconnectionDelayMax: 10000,
     });
 
     s.on("connect", () => {

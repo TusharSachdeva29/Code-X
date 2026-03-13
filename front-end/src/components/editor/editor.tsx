@@ -3,17 +3,12 @@ import useMonacoLanguages from "@/hooks/useMonocoLanguages";
 import { useEditor } from "@/hooks/useEditor";
 import { useFileTree } from "@/contexts/file-tree-context";
 import { cn } from "@/lib/utils";
-import { useEffect } from "react";
 
 export default function CodeEditor() {
   useMonacoLanguages();
   const { socketS3, socketDocker, selectedNode, selectingNode, language } =
     useFileTree();
   const { handleMount, code } = useEditor(socketS3, socketDocker, selectedNode);
-
-  useEffect(() => {
-    console.log(language);
-  }, [language]);
 
   return (
     <div className="w-full h-full">
