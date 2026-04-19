@@ -92,15 +92,15 @@ flowchart TB
 	end
 
 	subgraph SERVICES[Backend Services]
-		CodeAPI[code service :3001\nAuth + File APIs + Socket Hub]
-		Runtime[backend service :3000\nPTY + File Watcher + Local FS]
-		Orch[k8s service :3002\nSpawn/Delete + Dynamic Proxy]
+		CodeAPI[code service :3001<br/>Auth + File APIs + Socket Hub]
+		Runtime[backend service :3000<br/>PTY + File Watcher + Local FS]
+		Orch[k8s service :3002<br/>Spawn/Delete + Dynamic Proxy]
 	end
 
 	subgraph REALTIME[Realtime Layer]
-		S3Sock[Socket.IO\nsend-delta / receive-delta]
-		RunSock[Socket.IO\neditor:send-delta / terminal:*]
-		Watcher[chokidar events\ndocker:add/remove/update]
+		S3Sock[Socket.IO<br/>send-delta / receive-delta]
+		RunSock[Socket.IO<br/>editor:send-delta / terminal:*]
+		Watcher[chokidar events<br/>docker:add/remove/update]
 	end
 
 	subgraph DATA[Data + External]
@@ -111,9 +111,9 @@ flowchart TB
 
 	subgraph EXEC[Execution Engine]
 		K8s[(Kubernetes API)]
-		Pod[Per-user Workspace Pod\nuser-{username}]
+		Pod[Per-user Workspace Pod<br/>user-username]
 		PTY[node-pty bash]
-		Init[Init container\nAzure download-batch]
+		Init[Init container<br/>Azure download-batch]
 	end
 
 	UI --> Hooks
@@ -124,7 +124,7 @@ flowchart TB
 	Nginx -->|/api/*| CodeAPI
 	Nginx -->|/socket.io| CodeAPI
 	Nginx -->|/spawn /delete| Orch
-	Nginx -->|/user/{username}/{port}/*| Orch
+	Nginx -->|/user/:username/:port/*| Orch
 
 	CodeAPI --> S3Sock
 	Runtime --> RunSock
