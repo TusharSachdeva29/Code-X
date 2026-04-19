@@ -76,6 +76,120 @@ Typical request/event paths:
 - Browser -> Nginx -> /spawn and /delete -> k8s orchestrator
 - Browser -> Nginx -> /user/{username}/{port}/* -> per-user service
 
+### Architecture Diagram
+
+```mermaid
+flowchart TB
+	subgraph CLIENT[Client Layer]
+		UI[React + Vite UI]
+		Monaco[Monaco Editor]
+		Xterm[Xterm Terminal]
+		Hooks[Axios + React Query + Socket Hooks]
+	end
+
+	subgraph GATEWAY[Gateway / Edge]
+		Nginx[Nginx + Ingress]
+	end
+
+	subgraph SERVICES[Backend Services]
+		CodeAPI[code service :3001\nAuth + File APIs + Socket Hub]
+		Runtime[backend service :3000\nPTY + File Watcher + Local FS]
+		Orch[k8s service :3002\nSpawn/Delete + Dynamic Proxy]
+	end
+
+	subgraph REALTIME[Realtime Layer]
+		S3Sock[Socket.IO\nsend-delta / receive-delta]
+		RunSock[Socket.IO\neditor:send-delta / terminal:*]
+		Watcher[chokidar events\ndocker:add/remove/update]
+	end
+
+	subgraph DATA[Data + External]
+		PG[(PostgreSQL)]
+		Blob[(Azure Blob Storage)]
+		SMTP[SMTP Provider]
+	end
+
+	subgraph EXEC[Execution Engine]
+		K8s[(Kubernetes API)]
+		Pod[Per-user Workspace Pod\nuser-{username}]
+		PTY[node-pty bash]
+		Init[Init container\nAzure download-batch]
+	end
+
+	UI --> Hooks
+	Monaco --> Hooks
+	Xterm --> Hooks
+	Hooks -->|HTTPS/WS| Nginx
+
+	Nginx -->|/api/*| CodeAPI
+	Nginx -->|/socket.io| CodeAPI
+	Nginx -->|/spawn /delete| Orch
+	Nginx -->|/user/{username}/{port}/*| Orch
+
+	CodeAPI --> S3Sock
+	Runtime --> RunSock
+	Runtime --> Watcher
+
+	CodeAPI -->|Drizzle/pg| PG
+	CodeAPI -->|Blob SDK| Blob
+	CodeAPI -->|Nodemailer| SMTP
+
+	Orch -->|@kubernetes/client-node| K8s
+	K8s --> Pod
+	Pod --> PTY
+	Init --> Blob
+```
+
+### Detailed Architecture Responsibilities
+
+1. Client Layer
+- Presents the collaborative IDE experience (editor, terminal, file explorer, auth).
+- Uses REST calls for CRUD/auth and Socket.IO for collaboration + terminal streaming.
+
+2. Gateway Layer (Nginx + Ingress)
+- Single traffic entry for API, sockets, container lifecycle, and per-user routing.
+- Routes paths to target services without exposing internal cluster topology to clients.
+
+3. Main API Service (code)
+- Owns user authentication, account recovery, and protected endpoints.
+- Provides folder/file APIs backed by Azure Blob Storage.
+- Handles database operations through Drizzle and PostgreSQL.
+- Hosts collaboration socket handlers for editor deltas.
+
+4. Runtime Service (backend)
+- Runs shell sessions via node-pty for terminal interactivity.
+- Applies editor deltas to local workspace files.
+- Watches workspace changes and emits add/update/remove events for sync.
+
+5. Orchestrator Service (k8s)
+- Creates and deletes per-user Kubernetes deployments and services.
+- Proxies HTTP/WebSocket traffic into user container endpoints.
+
+6. Data Layer
+- PostgreSQL stores user identity/auth metadata.
+- Azure Blob stores persistent project files and folder structures.
+- SMTP provider handles verification and reset email delivery.
+
+7. Execution Layer
+- Each user gets an isolated runtime pod.
+- Init container hydrates pod workspace from Azure Blob.
+- User shell and runtime file changes are proxied back to the browser.
+
+### End-to-End Data Flow (Code Edit)
+
+1. User edits code in Monaco.
+2. Frontend emits delta events through sockets.
+3. Collaboration socket broadcasts to other clients.
+4. Runtime socket applies delta to local file.
+5. Save operations persist file content to Azure Blob Storage.
+
+### End-to-End Data Flow (Container Spawn)
+
+1. Frontend requests /spawn with username.
+2. Orchestrator creates user deployment + service.
+3. Init container pulls baseline project files from Azure Blob.
+4. Frontend probes /health via gateway and connects terminal/editor sockets.
+
 ## Repository Structure
 
 ```text
