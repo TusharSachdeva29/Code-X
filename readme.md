@@ -1,6 +1,7 @@
 # Code-X
+<img width="1313" height="1513" alt="Code-X-architecture drawio" src="https://github.com/user-attachments/assets/efea0445-fa2b-41d6-b2f6-de9098aca270" />
 
-<img width="1214" height="843" alt="Code-X-architectrue drawio" src="https://github.com/user-attachments/assets/3dd48462-f8a5-4f43-8c27-2d145b29d3a1" />
+<!-- <img width="1214" height="843" alt="Code-X-architectrue drawio" src="https://github.com/user-attachments/assets/3dd48462-f8a5-4f43-8c27-2d145b29d3a1" /> -->
 
 
 A full-stack collaborative code editor designed for real-time developer workflows:
