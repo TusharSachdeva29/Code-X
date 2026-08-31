@@ -1,12 +1,13 @@
 # Code-X
 
-<img width="1313" height="1513" alt="code-x-final-_) drawio" src="https://github.com/user-attachments/assets/ee89a27f-98bb-4e47-8b77-85f3b12f0265" />
+<!-- <img width="1313" height="1513" alt="code-x-final-_) drawio" src="https://github.com/user-attachments/assets/ee89a27f-98bb-4e47-8b77-85f3b12f0265" /> -->
 
 A full-stack collaborative code editor designed for real-time developer workflows:
-- Multi-user editing and synchronization
-- In-browser terminal experience
-- Multi-language editing support (Monaco)
-- Per-user runtime environments on Kubernetes
+
+* Multi-user editing and synchronization
+* In-browser terminal experience
+* Multi-language editing support (Monaco)
+* Per-user runtime environments on Kubernetes
 
 ## Table of Contents
 
@@ -26,91 +27,107 @@ A full-stack collaborative code editor designed for real-time developer workflow
 ## Project Overview
 
 Code-X is a collaborative web IDE platform where users can:
-- Authenticate and manage account access
-- Browse and edit project files
-- Collaborate on code changes in near real-time
-- Access an interactive terminal session
-- Work inside isolated per-user runtime containers
+
+* Authenticate and manage account access
+* Browse and edit project files
+* Collaborate on code changes in near real-time
+* Access an interactive terminal session
+* Work inside isolated per-user runtime containers
 
 The platform is split into multiple services:
-- front-end: React app
-- code: main API service (auth, file APIs, blob/db integration, socket hub)
-- backend: runtime/file-system service (PTY, watcher, local FS sync)
-- k8s: orchestration service (spawn/delete/proxy per-user containers)
+
+* front-end: React app
+* code: main API service (auth, file APIs, blob/db integration, socket hub)
+* backend: runtime/file-system service (PTY, watcher, local FS sync)
+* k8s: orchestration service (spawn/delete/proxy per-user containers)
 
 ## Core Features
 
-- Real-time collaboration via Socket.IO delta events
-- JWT-based authentication and protected APIs
-- PostgreSQL user management with Drizzle ORM
-- Azure Blob Storage as durable project file storage
-- Terminal streaming with node-pty
-- Kubernetes-managed per-user runtime environments
-- Nginx-based routing for API, sockets, and user container proxying
+* Real-time collaboration via Socket.IO delta events
+* JWT-based authentication and protected APIs
+* PostgreSQL user management with Drizzle ORM
+* Azure Blob Storage as durable project file storage
+* Terminal streaming with node-pty
+* Kubernetes-managed per-user runtime environments
+* Ingress Controller-based routing for API, sockets, and user container proxying
 
 ## System Architecture
 
 High-level layers:
 
 1. Client Layer
-- React + Vite SPA
-- Monaco editor, Xterm terminal, file explorer, auth screens
+
+* React + Vite SPA
+* Monaco editor, Xterm terminal, file explorer, auth screens
 
 2. Backend Services
-- Main API service (code)
-- Runtime file-system and terminal service (backend)
-- Kubernetes orchestrator service (k8s)
+
+* Main API service (code)
+* Runtime file-system and terminal service (backend)
+* Kubernetes orchestrator service (k8s)
 
 3. Realtime Layer
-- Socket.IO channels for:
-	- editor deltas
-	- terminal input/output
-	- file watcher events
+
+* Socket.IO channels for:
+
+  * editor deltas
+  * terminal input/output
+  * file watcher events
 
 4. Data and Execution Layer
-- PostgreSQL for user/auth records
-- Azure Blob for code files and folder structures
-- Kubernetes per-user pods for isolated runtime execution
+
+* PostgreSQL for user/auth records
+* Azure Blob for code files and folder structures
+* Kubernetes per-user pods for isolated runtime execution
 
 Typical request/event paths:
-- Browser -> Nginx -> /api/* -> code service
-- Browser -> Nginx -> /socket.io -> code socket hub
-- Browser -> Nginx -> /spawn and /delete -> k8s orchestrator
-- Browser -> Nginx -> /user/{username}/{port}/* -> per-user service
+
+* Browser -> Ingress Controller -> /api/* -> code service
+* Browser -> Ingress Controller -> /socket.io -> code socket hub
+* Browser -> Ingress Controller -> /spawn and /delete -> k8s orchestrator
+* Browser -> Ingress Controller -> /user/{username}/{port}/* -> k8s orchestrator -> per-user service
+
 ### Detailed Architecture Responsibilities
 
 1. Client Layer
-- Presents the collaborative IDE experience (editor, terminal, file explorer, auth).
-- Uses REST calls for CRUD/auth and Socket.IO for collaboration + terminal streaming.
 
-2. Gateway Layer (Nginx + Ingress)
-- Single traffic entry for API, sockets, container lifecycle, and per-user routing.
-- Routes paths to target services without exposing internal cluster topology to clients.
+* Presents the collaborative IDE experience (editor, terminal, file explorer, auth).
+* Uses REST calls for CRUD/auth and Socket.IO for collaboration + terminal streaming.
+
+2. Gateway Layer (Ingress Controller)
+
+* Single traffic entry for API, sockets, container lifecycle, and per-user routing.
+* Routes paths to target Kubernetes services without exposing internal cluster topology to clients.
 
 3. Main API Service (code)
-- Owns user authentication, account recovery, and protected endpoints.
-- Provides folder/file APIs backed by Azure Blob Storage.
-- Handles database operations through Drizzle and PostgreSQL.
-- Hosts collaboration socket handlers for editor deltas.
+
+* Owns user authentication, account recovery, and protected endpoints.
+* Provides folder/file APIs backed by Azure Blob Storage.
+* Handles database operations through Drizzle and PostgreSQL.
+* Hosts collaboration socket handlers for editor deltas.
 
 4. Runtime Service (backend)
-- Runs shell sessions via node-pty for terminal interactivity.
-- Applies editor deltas to local workspace files.
-- Watches workspace changes and emits add/update/remove events for sync.
+
+* Runs shell sessions via node-pty for terminal interactivity.
+* Applies editor deltas to local workspace files.
+* Watches workspace changes and emits add/update/remove events for sync.
 
 5. Orchestrator Service (k8s)
-- Creates and deletes per-user Kubernetes deployments and services.
-- Proxies HTTP/WebSocket traffic into user container endpoints.
+
+* Creates and deletes per-user Kubernetes deployments and services.
+* Proxies HTTP/WebSocket traffic into user container endpoints.
 
 6. Data Layer
-- PostgreSQL stores user identity/auth metadata.
-- Azure Blob stores persistent project files and folder structures.
-- SMTP provider handles verification and reset email delivery.
+
+* PostgreSQL stores user identity/auth metadata.
+* Azure Blob stores persistent project files and folder structures.
+* SMTP provider handles verification and reset email delivery.
 
 7. Execution Layer
-- Each user gets an isolated runtime pod.
-- Init container hydrates pod workspace from Azure Blob.
-- User shell and runtime file changes are proxied back to the browser.
+
+* Each user gets an isolated runtime pod.
+* Init container hydrates pod workspace from Azure Blob.
+* User shell and runtime file changes are proxied back to the browser.
 
 ### End-to-End Data Flow (Code Edit)
 
@@ -125,7 +142,7 @@ Typical request/event paths:
 1. Frontend requests /spawn with username.
 2. Orchestrator creates user deployment + service.
 3. Init container pulls baseline project files from Azure Blob.
-4. Frontend probes /health via gateway and connects terminal/editor sockets.
+4. Frontend probes /health via the Ingress Controller and connects terminal/editor sockets.
 
 ## Repository Structure
 
@@ -134,41 +151,43 @@ Code-X/
 	front-end/       # React + Vite client
 	code/            # Main API service (auth, files, db, blob, sockets)
 	backend/         # Runtime service (pty, watcher, local fs)
-	k8s/             # Kubernetes orchestration/proxy service
-	deployment/      # Kubernetes manifests, ingress, nginx, secrets/config
+	k8s/              # Kubernetes orchestration/proxy service
+	deployment/      # Kubernetes manifests, ingress, secrets/config
 ```
 
 ## Tech Stack
 
 Frontend:
-- React 19
-- TypeScript
-- Vite
-- TanStack Query
-- Monaco Editor
-- Socket.IO client
-- Xterm.js
+
+* React 19
+* TypeScript
+* Vite
+* TanStack Query
+* Monaco Editor
+* Socket.IO client
+* Xterm.js
 
 Backend and Platform:
-- Node.js + TypeScript
-- Express
-- Socket.IO
-- Drizzle ORM
-- PostgreSQL (pg)
-- Azure Storage Blob SDK
-- node-pty
-- chokidar
-- Kubernetes client for Node.js
+
+* Node.js + TypeScript
+* Express
+* Socket.IO
+* Drizzle ORM
+* PostgreSQL (pg)
+* Azure Storage Blob SDK
+* node-pty
+* chokidar
+* Kubernetes client for Node.js
 
 ## Local Development Setup
 
 ### Prerequisites
 
-- Node.js 18+ (recommended 20+)
-- npm 9+
-- PostgreSQL (or Docker for local DB)
-- Access to Azure Blob Storage credentials
-- Optional: Kubernetes cluster access for k8s service testing
+* Node.js 18+ (recommended 20+)
+* npm 9+
+* PostgreSQL (or Docker for local DB)
+* Access to Azure Blob Storage credentials
+* Optional: Kubernetes cluster access for k8s service testing
 
 ### 1) Install Dependencies
 
@@ -195,10 +214,11 @@ Ensure your DATABASE_URL points to your running Postgres instance.
 ### 3) Configure Environment Files
 
 Create .env files in:
-- code/.env
-- backend/.env
-- k8s/.env
-- front-end/.env
+
+* code/.env
+* backend/.env
+* k8s/.env
+* front-end/.env
 
 Use the environment section below as reference.
 
@@ -221,10 +241,11 @@ cd front-end && npm run dev
 ```
 
 Default ports in this codebase:
-- code API: 3001
-- backend runtime: 3000
-- k8s orchestrator: 3002
-- frontend (vite): 5173 (or 5174 if occupied)
+
+* code API: 3001
+* backend runtime: 3000
+* k8s orchestrator: 3002
+* frontend (vite): 5173 (or 5174 if occupied)
 
 ## Environment Variables
 
@@ -284,8 +305,9 @@ VITE_WEB_SOCKET_URL=http://localhost:3002
 ```
 
 Notes:
-- In production, requests are usually routed through Nginx/Ingress hostnames.
-- Keep secrets in secure secret stores for production, not in plaintext files.
+
+* In production, requests are routed through the Ingress Controller.
+* Keep secrets in secure secret stores for production, not in plaintext files.
 
 ## API and Realtime Contracts
 
@@ -294,74 +316,81 @@ Notes:
 Base path: /api
 
 Auth:
-- POST /auth/register
-- POST /auth/login
-- POST /auth/logout
-- GET /auth/me
-- POST /auth/forgot-password
-- POST /auth/reset-password
-- POST /auth/change-password
-- GET /auth/verify-email
+
+* POST /auth/register
+* POST /auth/login
+* POST /auth/logout
+* GET /auth/me
+* POST /auth/forgot-password
+* POST /auth/reset-password
+* POST /auth/change-password
+* GET /auth/verify-email
 
 Sidebar / file tree (blob-backed):
-- GET /sidebar/get-folder-structure/tree
-- GET /sidebar/get-folder-structure/list
-- POST /sidebar/add-s3-object
-- PUT /sidebar/edit-s3-object
-- PUT /sidebar/delete-s3-object
+
+* GET /sidebar/get-folder-structure/tree
+* GET /sidebar/get-folder-structure/list
+* POST /sidebar/add-s3-object
+* PUT /sidebar/edit-s3-object
+* PUT /sidebar/delete-s3-object
 
 Editor:
-- POST /editor/load-file
-- POST /editor/save-file
+
+* POST /editor/load-file
+* POST /editor/save-file
 
 ### Runtime Routes (backend service)
 
 Base path: /folder-structure
 
-- GET /build
-- POST /add-file-folder
-- POST /delete-file-folder
-- POST /s3-backend-mismatch
+* GET /build
+* POST /add-file-folder
+* POST /delete-file-folder
+* POST /s3-backend-mismatch
 
 ### Orchestrator Routes (k8s service)
 
-- POST /spawn
-- POST /delete
-- /:username/:port/* (dynamic proxy into per-user service)
+* POST /spawn
+* POST /delete
+* /:username/:port/* (dynamic proxy into per-user service)
 
 ### Socket Events
 
 Main collaboration socket:
-- client -> send-delta
-- server -> receive-delta
+
+* client -> send-delta
+* server -> receive-delta
 
 Runtime socket:
-- client -> editor:send-delta
-- client -> terminal:write
-- server -> terminal:data
-- server -> docker:add
-- server -> docker:remove
-- server -> docker:update
+
+* client -> editor:send-delta
+* client -> terminal:write
+* server -> terminal:data
+* server -> docker:add
+* server -> docker:remove
+* server -> docker:update
 
 ## Deployment and Infrastructure
 
 Kubernetes manifests are provided under deployment/v-code-deployment and k8s/src/k8s.
 
 Key components:
-- v-code deployment/service (main API)
-- k8s-orchestrator deployment/service
-- nginx deployment/service + configmap routing
-- ingress + managed certificate resources
-- postgres deployment
 
-Nginx handles:
-- /api -> main API service
-- /socket.io -> main socket hub
-- /spawn and /delete -> orchestrator
-- /user/{username}/... -> orchestrator -> per-user container
+* v-code deployment/service (main API)
+* k8s-orchestrator deployment/service
+* Ingress Controller and Ingress routing configuration
+* postgres deployment
+
+Ingress Controller handles external routing for:
+
+* /api -> main API service
+* /socket.io -> main socket hub
+* /spawn and /delete -> orchestrator
+* /user/{username}/... -> orchestrator -> per-user container
 
 Per-user runtime provisioning:
+
 1. Orchestrator receives /spawn with username
 2. Creates Kubernetes Deployment + Service for that user
 3. Init container pulls starter files from Azure Blob
-4. Frontend polls /health and then connects socket/HTTP through /user path
+4. Frontend polls /health and then connects socket/HTTP through the Ingress Controller /user path
